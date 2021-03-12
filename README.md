@@ -71,7 +71,65 @@ Purpose 2: Used to connect two very close but separate objects
 
 ###  Style transfer
 
-**Style transfer is the technique of recomposing one image in the style of another. Two inputs, a content image and a style image are analyzed by a convolutional neural network which is then used to create an output image whose “content” mirrors the content image and whose style resembles that of the style image
+**Style transfer** is the technique of recomposing one image in the style of another. Two inputs, a content image and a style image are analyzed by a convolutional neural network which is then used to create an output image whose “content” mirrors the content image and whose style resembles that of the style image
+
+### Foreword
+
+We propose to make two different phase . The first one will focus more on the general style, giving an intermediate result that where the object will still stand out a bit in the picture. The second phase will focus more on the details, and smoothening the edges that could have appeared during the first part
+We'll call the content picture the painting with our object pasted on it and the style picture the original painting. The input is the content picture for phase 1, the result of this first stage for phase 2. In both cases, we'll compute the results of the convolutional layers for the content picture and the style picture at first, which will serve as our reference features. Then we compute the results of the same convolutional layers for our input, compare them and calculate a loss from that.
+We'll compute the gradients of this loss and use them to get a better input, then reiterate the process
+
+### The First Pass
+
+In this pass, first step we define two Loss Function, one is a content loss, that measures the difference between our input and the content image, a style loss, that measures the difference between our input and the style image, sum them with certain weights to get our final loss, and will mask all the parts of the image that have nothing to do with it when we compute our loss.
+We will use a slightly dilated mask, that encircles a bit more than just the object we're adding. It's the mean-squared error (MSE) between the masked features of our content image and the masked features of our input, use the result of the fourth convolutional layer only for this content loss. Using one of the first convolutional layers would force the final output to match the initial object :
+
+<p style="text-align:center;">
+    <img src="images/005.png" width="80%" />
+</p>
+
+
+About style loss, We'll use Gram matrices like we do for regular style transfer, for each layer of results we have from our model, we'll look at each 3 by 3 part of the content features, and find the 3 by 3 patch in the style features that looks the most like it, and match them. To measure how much two patches look alike, we'll use the cosine similarity between them.
+
+<p style="text-align:center;">
+    <img src="images/006.png" width="80%" />
+</p>
+
+Once that mapping is done , we will transform the style features so that the centers of each 3 by 3 patch in the content features is aligned with its match in the style features. Then we will apply the resized mask on the input features and the style features, compute the Gram matrices of both of them then take the mean-squared error to give us the style loss.
+Final loss of this first stage is then:
+
+<p style="text-align:center;">
+    <img src="images/007.png" width="80%" />
+</p>
+
+### The histogram loss
+
+Histogram matching is a technique that is often used to modify a certain photograph with the luminosity or shadows of another.
+<p style="text-align:center;">
+    <img src="images/008.png" width="80%" />
+</p>
+
+We compute the histogram of each channel of the style features as a reference. Then, at each pass of our training, we calculate the remapping of our output features so that their histogram matches the style reference. We then define the histogram loss as being the the mean-squared error between the output features and their remapped version. The challenge here is to compute that remapping.
+
+<p style="text-align:center;">
+    <img src="images/009.png" width="80%" />
+</p>
+
+
+##  Conclusion
+
+So, we will output 2 pictures in phase1, phase 2 and compare with original picture :
+
+<p style="text-align:center;">
+    <img src="images/010.png" width="80%" />
+</p>
+
+
+
+
+
+
+
 
 
 
